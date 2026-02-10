@@ -12,3 +12,5 @@ customtkinter
 Pillow
 pywebview
 flask
+sentence-transformers
+numpy

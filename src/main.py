@@ -12,6 +12,7 @@ from core.transcription import StreamingSTT
 from core.llm import process_text
 from core.tts import speak
 from core.intent import basic_intent_parser
+from core.memory import get_memory_manager
 from modules.system import execute_system_command
 # from modules.files import execute as file_exec
 
@@ -21,6 +22,7 @@ class MareenAPI:
         self._window = None
         self._listening_paused = False
         self.stt = None
+        self.memory = get_memory_manager()
 
     def set_window(self, window):
         self._window = window
@@ -76,9 +78,13 @@ class MareenAPI:
         self.update_status("PROCESSING...")
 
         if "stop" in text.lower() or "exit" in text.lower():
+            # Log the exit command
+            self.memory.log_message("USER", text, intent="exit")
             speak("Phr milenge.")
             self.update_status("OFFLINE")
             self._running = False
+            # End the session before exiting
+            self.memory.end_session()
             if self._window:
                 self._window.destroy()
             sys.exit()
@@ -86,10 +92,15 @@ class MareenAPI:
         parsed_command = basic_intent_parser(text)
         
         if parsed_command:
+            # Log system command
+            self.memory.log_message("USER", text, intent="system_command")
             execute_system_command(parsed_command)
-            self.add_message("MAREEN", f"Executed: {parsed_command}")
+            response_msg = f"Executed: {parsed_command}"
+            self.add_message("MAREEN", response_msg)
+            self.memory.log_message("MAREEN", response_msg, intent="system_response")
         else:
             self.update_status("THINKING...")
+            # process_text now handles memory logging internally
             response = process_text(text)
             self.update_status("SPEAKING")
             self.add_message("MAREEN", response)
@@ -104,6 +115,14 @@ class MareenAPI:
     def main_loop(self):
         print("DEBUG: Entered main_loop")
         time.sleep(2) # Let UI load
+        
+        # Start a new memory session
+        session_id = self.memory.start_session(metadata={
+            "app_version": "3.1",
+            "platform": sys.platform
+        })
+        print(f"Memory session started: {session_id}")
+        
         self.update_status("ONLINE & LISTENING")
         
         print("DEBUG: Initializing Streaming STT...")

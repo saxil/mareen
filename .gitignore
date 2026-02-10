@@ -59,3 +59,16 @@ pip/cache/
 # Environment variables
 .env
 .env.local
+
+# Memory System (private data - do not commit)
+memory.db
+memory.db-journal
+test_session_*.json
+*_backup.db
+
+# RAG System (embeddings cache)
+embeddings_cache.pkl
+
+# Soul System (optional - some may want to track soul.md in git)
+# Uncomment the line below if you want to keep soul.md private
+# soul.md
