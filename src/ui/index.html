@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Swati - Voice Assistant</title>
+    <title>Mareen - Voice Assistant</title>
     <style>
         :root {
             --bg-top: #0C0C0E;
@@ -97,7 +97,7 @@
             opacity: 0;
         }
         
-        .text-jarvis {
+        .text-mareen {
             color: var(--speaking-color);
             font-weight: 400;
         }
@@ -454,8 +454,8 @@
                 sphereConfig.rotationSpeed = 0.005;
                 
                 // Clear subtitle if we go back to idle (speech finished)
-                // We only clear if it is currently showing Jarvis's text (blue)
-                if (subtitleContainer.classList.contains('text-jarvis')) {
+                // We only clear if it is currently showing Mareen's text (blue)
+                if (subtitleContainer.classList.contains('text-mareen')) {
                      subtitleContainer.classList.add('fade-out');
                 }
             }
@@ -465,7 +465,7 @@
             console.log("Message:", sender, message);
             if (sender === "YOU") {
                 showSubtitle(message, false);
-            } else if (sender === "JARVIS") {
+            } else if (sender === "MAREEN") {
                 // Persistent subtitle until IDLE
                 showSubtitle(message, true, true);
             }
@@ -475,7 +475,7 @@
              // Updates user text without quotes closure or timeout
              subtitleContainer.innerText = "\"" + text + "...";
              subtitleContainer.classList.remove('fade-out');
-             subtitleContainer.classList.remove('text-jarvis');
+             subtitleContainer.classList.remove('text-mareen');
              if (subtitleTimeout) clearTimeout(subtitleTimeout);
         }
 
@@ -499,14 +499,14 @@
         
         let subtitleTimeout;
 
-        function showSubtitle(text, isJarvis = false, persistent = false) {
+        function showSubtitle(text, isMareen = false, persistent = false) {
             subtitleContainer.innerText = "\"" + text + "\"";
             subtitleContainer.classList.remove('fade-out');
             
-            if (isJarvis) {
-                subtitleContainer.classList.add('text-jarvis');
+            if (isMareen) {
+                subtitleContainer.classList.add('text-mareen');
             } else {
-                subtitleContainer.classList.remove('text-jarvis');
+                subtitleContainer.classList.remove('text-mareen');
             }
             
             if (subtitleTimeout) clearTimeout(subtitleTimeout);
@@ -534,7 +534,7 @@
         py_updateStatus("IDLE");
 
         window.addEventListener('pywebviewready', function() {
-            console.log("Swati UI Ready");
+            console.log("Mareen UI Ready");
         });
 
     </script>

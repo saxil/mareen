@@ -7,11 +7,11 @@ from PIL import Image
 # Add src to path for direct running if needed
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-class JarvisGUI(ctk.CTk):
+class MareenGUI(ctk.CTk):
     def __init__(self, start_callback):
         super().__init__()
 
-        self.title("Jarvis v3.0")
+        self.title("Mareen v3.0")
         self.geometry("800x600")
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
@@ -23,7 +23,7 @@ class JarvisGUI(ctk.CTk):
         # Header
         self.header_frame = ctk.CTkFrame(self, height=50, corner_radius=0)
         self.header_frame.grid(row=0, column=0, sticky="ew")
-        self.title_label = ctk.CTkLabel(self.header_frame, text="J.A.R.V.I.S", font=("Roboto Medium", 20))
+        self.title_label = ctk.CTkLabel(self.header_frame, text="M.A.R.E.E.N", font=("Roboto Medium", 20))
         self.title_label.pack(pady=10)
 
         # Chat Area
@@ -43,7 +43,7 @@ class JarvisGUI(ctk.CTk):
         
         # Determine colors for text
         self.user_color = "#3B8ED0" # Blue
-        self.jarvis_color = "#2CC985" # Green
+        self.mareen_color = "#2CC985" # Green
 
     def update_status(self, text):
         self.status_label.configure(text=text)
@@ -55,8 +55,8 @@ class JarvisGUI(ctk.CTk):
             text_color = self.user_color
             prefix = "YOU: "
         else:
-            text_color = self.jarvis_color
-            prefix = "JARVIS: "
+            text_color = self.mareen_color
+            prefix = "MAREEN: "
             
         self.chat_display.insert("end", f"\n{prefix}", ("prefix",))
         self.chat_display.insert("end", f"{message}\n")

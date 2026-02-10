@@ -89,7 +89,7 @@ def show_search_results(files):
                 print(f"Error opening folder: {e}")
 
     root = tk.Tk()
-    root.title("Jarvis - Files Found")
+    root.title("Mareen - Files Found")
     root.geometry("600x400")
     root.wm_attributes('-topmost', 1)
 

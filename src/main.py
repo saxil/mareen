@@ -15,7 +15,7 @@ from core.intent import basic_intent_parser
 from modules.system import execute_system_command
 # from modules.files import execute as file_exec
 
-class JarvisAPI:
+class MareenAPI:
     def __init__(self):
         self._running = False
         self._window = None
@@ -87,12 +87,12 @@ class JarvisAPI:
         
         if parsed_command:
             execute_system_command(parsed_command)
-            self.add_message("JARVIS", f"Executed: {parsed_command}")
+            self.add_message("MAREEN", f"Executed: {parsed_command}")
         else:
             self.update_status("THINKING...")
             response = process_text(text)
             self.update_status("SPEAKING")
-            self.add_message("JARVIS", response)
+            self.add_message("MAREEN", response)
             speak(response)
         
         self.update_status("IDLE")
@@ -110,7 +110,7 @@ class JarvisAPI:
         try:
              self.stt = StreamingSTT()
         except Exception as e:
-             self.add_message("JARVIS", f"Error loading STT Model: {e}")
+             self.add_message("MAREEN", f"Error loading STT Model: {e}")
              print(f"STT Init Error: {e}")
              return
 
@@ -152,7 +152,7 @@ class JarvisAPI:
                 print(f"DEBUG: Error in STT loop: {e}")
                 time.sleep(1) # Prevent tight loop on error
 
-api = JarvisAPI()
+api = MareenAPI()
 
 # ---- Manual Icon Set Helper for Windows ----
 def set_window_icon(title, icon_path):
@@ -207,7 +207,7 @@ def on_loaded():
              print(f"DEBUG: Found icon for manual set: {found_icon}")
              # Retry finding window a few times
              for _ in range(3):
-                 set_window_icon('Swati', found_icon)
+                 set_window_icon('Mareen', found_icon)
                  time.sleep(0.5)
         else:
              print("DEBUG: Could not find following.ico for manual set.")
@@ -223,7 +223,7 @@ if __name__ == '__main__':
     import ctypes
     try:
         # Use a fresh ID to ensure no caching issues
-        myappid = 'jarvis.assistant.app.v3.1'
+        myappid = 'mareen.assistant.app.v3.1'
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     except Exception as e:
         print(f"DEBUG: Could not set AppUserModelID: {e}")
@@ -268,7 +268,7 @@ if __name__ == '__main__':
     print(f"DEBUG: Loading UI from: {html_path}")
 
     # Create the window with API access
-    window = webview.create_window('Swati', url=html_path, width=500, height=800, background_color='#000000', js_api=api)
+    window = webview.create_window('Mareen', url=html_path, width=500, height=800, background_color='#000000', js_api=api)
     api.set_window(window)
 
     # Start the webview

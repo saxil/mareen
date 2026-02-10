@@ -1,7 +1,7 @@
-# Swati (formerly Jarvis v3.0) - Voice Assistant
+# Mareen (formerly Jarvis v3.0) - Voice Assistant
 
 ## Overview
-Swati is a calm, immersive, voice-first AI assistant featuring a glowing orb interface. Under the hood, it is powered by:
+Mareen is a calm, immersive, voice-first AI assistant featuring a glowing orb interface. Under the hood, it is powered by:
 - **Ollama** for local LLM processing (model `j`).
 - **SpeechRecognition** for STT.
 - **EdgeTTS / pyttsx3** for TTS.
@@ -27,7 +27,7 @@ Run the main script:
 ```bash
 python src/main.py
 ```
-Wake word: "Jarvis" (Implied in conversation flow for now)
+Wake word: "Mareen" (Implied in conversation flow for now)
 commands:
 - "Open calculator"
 - "Open notepad"- "Open [any app name]" (e.g., "Open Spotify", "Open Chrome")- Any general question (processed by LLaMA 3)

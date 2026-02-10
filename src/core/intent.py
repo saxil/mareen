@@ -24,7 +24,7 @@ def basic_intent_parser(text):
     # Handle "open [app name]" with more flexibility
     # Strip common prefixes
     clean_text = text
-    for prefix in ["can you ", "please ", "jarvis ", "could you "]:
+    for prefix in ["can you ", "please ", "mareen ", "could you "]:
         if clean_text.startswith(prefix):
             clean_text = clean_text.replace(prefix, "", 1).strip()
 
