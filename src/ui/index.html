@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swati - Voice Assistant</title>
+    <style>
+        :root {
+            --bg-top: #0C0C0E;
+            --bg-bottom: #1A120A;
+            --idle-color: #FFB347; /* Warm amber/gold */
+            --listening-color: #FFDE03; /* Bright Yellow */
+            --speaking-color: #03A9F4; /* Light Blue */
+            
+            --current-color: var(--idle-color);
+            --text-color: rgba(255, 255, 255, 0.65);
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: default;
+        }
+
+        body {
+            background: linear-gradient(to bottom, var(--bg-top), var(--bg-bottom));
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            font-family: var(--font-main);
+            color: var(--text-color);
+        }
+        
+        /* Particle Canvas for Ambient Background */
+        #bg-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        /* Top Zone: Context */
+        .top-zone {
+            height: 10vh;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            font-size: 14px;
+            opacity: 0.8;
+            font-weight: 300;
+            z-index: 10;
+        }
+
+        .status-text {
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+
+        /* Middle Zone: Negative Space */
+        .middle-zone {
+            flex-grow: 1;
+            /* Pure negative space */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        /* Subtitles (Transient text) */
+        #subtitle-container {
+            margin-bottom: 2rem;
+            text-align: center;
+            min-height: 24px;
+            transition: opacity 0.5s ease;
+            max-width: 80%;
+            font-size: 24px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            line-height: 1.4;
+        }
+        
+        .fade-out {
+            opacity: 0;
+        }
+        
+        .text-jarvis {
+            color: var(--speaking-color);
+            font-weight: 400;
+        }
+
+        /* Bottom Zone: Primary Interaction */
+        .bottom-zone {
+            height: 40vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 50px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .interaction-container {
+            display: flex;
+            flex-direction: row; /* Horizontal alignment */
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+        }
+
+        /* 3D Orb Canvas */
+        #orb-canvas {
+            width: 180px;
+            height: 180px;
+            margin: 0 10px;
+        }
+        
+        /* Hint Text */
+        .hint-text {
+            font-size: 16px;
+            margin-bottom: 10px;
+            opacity: 0.5;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+            transition: opacity 0.3s ease;
+        }
+
+        .hint-text.hidden {
+            opacity: 0;
+        }
+
+        /* Action Buttons */
+        .controls {
+            /* Now part of interaction-container, but we keep the class for styling */
+            display: contents; /* Allows buttons to participate in the parent flex */
+        }
+        
+        .btn-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05); /* Slight fill */
+            color: rgba(255, 255, 255, 1.0);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .btn-circle:hover {
+            border-color: #ffffff;
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .btn-circle:active {
+            transform: scale(0.95);
+        }
+
+        /* SVG Icons */
+        .icon {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        /* Responsive Text */
+        @media (max-height: 700px) {
+            #orb-canvas {
+                width: 200px;
+                height: 200px;
+            }
+            .bottom-zone {
+                height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="top-zone">
+        <div id="greeting">Hello</div>
+        <div class="status-text" id="status-display">ONLINE</div>
+    </div>
+
+    <div class="middle-zone">
+        <div id="subtitle-container" class="fade-out"></div>
+    </div>
+
+    <div class="bottom-zone">
+        <div class="hint-text" id="hint-text">Say something...</div>
+        
+        <div class="interaction-container">
+            <button class="btn-circle sub-btn" onclick="toggleListening(false)" title="Stop/Cancel">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+            
+            <canvas id="orb-canvas" width="400" height="400"></canvas>
+            
+            <button class="btn-circle sub-btn" onclick="toggleListening(true)" title="Start Listening">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const hintText = document.getElementById('hint-text');
+        const statusDisplay = document.getElementById('status-display');
+        const subtitleContainer = document.getElementById('subtitle-container');
+        const greeting = document.getElementById('greeting');
+        
+        // --- 3D Particle Sphere Implementation ---
+        const orbCanvas = document.getElementById('orb-canvas');
+        const orbCtx = orbCanvas.getContext('2d');
+        
+        // Configuration
+        let sphereConfig = {
+            radius: 120,
+            color: { r: 255, g: 179, b: 71 }, // Default Amber
+            rotationSpeed: 0.005,
+            numParticles: 400,
+            pulseAmount: 0,
+            vibration: 0
+        };
+        
+        // State Colors
+        const COLORS = {
+            IDLE: { r: 255, g: 179, b: 71 },
+            LISTENING: { r: 255, g: 222, b: 3 },
+            SPEAKING: { r: 3, g: 169, b: 244 },
+            THINKING: { r: 255, g: 179, b: 71 } // Same as idle but faster spin
+        };
+
+        // Particles
+        let sphereParticles = [];
+        
+        class SphereParticle {
+            constructor() {
+                this.theta = Math.random() * Math.PI * 2;
+                this.phi = Math.acos((Math.random() * 2) - 1);
+                this.baseSize = Math.random() * 2 + 1;
+                this.x = 0;
+                this.y = 0;
+                this.z = 0;
+            }
+            
+            project(radius, rotationX, rotationY) {
+                // Sphere Coordinates to Cartesian
+                let x = radius * Math.sin(this.phi) * Math.cos(this.theta);
+                let y = radius * Math.sin(this.phi) * Math.sin(this.theta);
+                let z = radius * Math.cos(this.phi);
+                
+                // Add Vibration (Waveform effect)
+                if (sphereConfig.vibration > 0) {
+                   const vib = (Math.random() - 0.5) * sphereConfig.vibration;
+                   x += vib; y += vib; z += vib;
+                }
+
+                // Rotation Y
+                let tempX = x * Math.cos(rotationY) - z * Math.sin(rotationY);
+                let tempZ = x * Math.sin(rotationY) + z * Math.cos(rotationY);
+                x = tempX;
+                z = tempZ;
+                
+                // Rotation X
+                let tempY = y * Math.cos(rotationX) - z * Math.sin(rotationX);
+                z = y * Math.sin(rotationX) + z * Math.cos(rotationX);
+                y = tempY;
+                
+                // Perspective Projection
+                const scale = 300 / (300 + z); 
+                
+                this.projX = x * scale + orbCanvas.width / 2;
+                this.projY = y * scale + orbCanvas.height / 2;
+                this.projSize = this.baseSize * scale;
+                this.alpha = PhaserMath_Clamp(((z + radius) / (2 * radius)), 0.2, 1);
+            }
+        }
+        
+        function PhaserMath_Clamp(value, min, max) {
+            return Math.max(min, Math.min(max, value));
+        }
+        
+        function initSphere() {
+            for(let i=0; i<sphereConfig.numParticles; i++) {
+                sphereParticles.push(new SphereParticle());
+            }
+        }
+        initSphere();
+        
+        let rotationY = 0;
+        let rotationX = 0;
+        let time = 0;
+        
+        function animateSphere() {
+            orbCtx.clearRect(0, 0, orbCanvas.width, orbCanvas.height);
+            
+            time += 0.05;
+            rotationY += sphereConfig.rotationSpeed;
+            rotationX += sphereConfig.rotationSpeed * 0.5;
+            
+            // Pulse Effect
+            let currentRadius = sphereConfig.radius;
+            if (sphereConfig.pulseAmount > 0) {
+                currentRadius += Math.sin(time) * sphereConfig.pulseAmount;
+            }
+            
+            // Sort particles by depth (Z) to draw back-to-front could be done, 
+            // but for dots simple additive blending looks good enough for "hologram".
+            
+            // Draw Particles
+            orbCtx.fillStyle = `rgba(${sphereConfig.color.r}, ${sphereConfig.color.g}, ${sphereConfig.color.b}, 1)`;
+            
+            sphereParticles.forEach(p => {
+                p.project(currentRadius, rotationX, rotationY);
+                
+                // Draw glowy dot
+                orbCtx.beginPath();
+                orbCtx.globalAlpha = p.alpha;
+                orbCtx.arc(p.projX, p.projY, p.projSize, 0, Math.PI * 2);
+                orbCtx.fill();
+            });
+            
+            orbCtx.globalAlpha = 1.0;
+            requestAnimationFrame(animateSphere);
+        }
+        animateSphere();
+        
+        
+        // --- Ambient Background Particles ---
+        const bgCanvas = document.getElementById('bg-canvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        let bgParticles = [];
+        
+        function resizeBg() {
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeBg);
+        resizeBg();
+        
+        class BgParticle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * bgCanvas.width;
+                this.y = Math.random() * bgCanvas.height;
+                this.size = Math.random() * 2;
+                this.speed = Math.random() * 0.5 + 0.1;
+                this.angle = Math.random() * Math.PI * 2;
+                this.opacity = 0;
+                this.fadeIn = true;
+            }
+            update() {
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+                
+                if (this.fadeIn) {
+                    this.opacity += 0.01;
+                    if(this.opacity >= 0.5) this.fadeIn = false;
+                } else {
+                    this.opacity -= 0.01;
+                    if(this.opacity <= 0) this.reset();
+                }
+                
+                if (this.x < 0 || this.x > bgCanvas.width || this.y < 0 || this.y > bgCanvas.height) {
+                    this.reset();
+                }
+            }
+            draw() {
+                bgCtx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                bgCtx.beginPath();
+                bgCtx.arc(this.x, this.y, this.size, 0, Math.PI); // Half arc for twinkle
+                bgCtx.fill();
+            }
+        }
+        
+        for(let i=0; i<30; i++) bgParticles.push(new BgParticle());
+        
+        function animateBg() {
+            bgCtx.clearRect(0,0, bgCanvas.width, bgCanvas.height);
+            bgParticles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animateBg);
+        }
+        animateBg();
+
+        
+        // --- Python to JS Interface ---
+
+        function interpolateColor(target) {
+            // Simple ease towards target color in animation loop could be better,
+            // but for now direct assignment is safer to ensure responsiveness
+            sphereConfig.color = target;
+            // Also update CSS variable for hover effects
+            document.documentElement.style.setProperty('--current-color', `rgb(${target.r}, ${target.g}, ${target.b})`);
+        }
+
+        // Called by Python to update status
+        function py_updateStatus(status) {
+            console.log("Status Update:", status);
+            status = status.toUpperCase();
+            
+            statusDisplay.innerText = status;
+            
+            // Defaults
+            sphereConfig.rotationSpeed = 0.005;
+            sphereConfig.pulseAmount = 0;
+            sphereConfig.vibration = 0;
+            // Default hidden, only show when waiting for speech
+            hintText.classList.add('hidden');
+
+            if (status.includes("LISTENING")) {
+                interpolateColor(COLORS.LISTENING);
+                sphereConfig.pulseAmount = 5; // Breathe deeply
+                sphereConfig.rotationSpeed = 0.01; // Spin slightly faster
+                hintText.classList.remove('hidden'); // Show prompt when listening
+                
+            } else if (status.includes("PROCESSING") || status.includes("THINKING")) {
+                interpolateColor(COLORS.THINKING);
+                sphereConfig.rotationSpeed = 0.05; // Spin fast
+                sphereConfig.pulseAmount = 0;
+                
+            } else if (status.includes("SPEAKING")) {
+                interpolateColor(COLORS.SPEAKING);
+                sphereConfig.vibration = 3; // Vibrate/Talk
+                sphereConfig.rotationSpeed = 0.02;
+                
+            } else {
+                // IDLE or PAUSED or OFFLINE
+                interpolateColor(COLORS.IDLE);
+                sphereConfig.pulseAmount = 2; // Gentle idle breath
+                sphereConfig.rotationSpeed = 0.005;
+                
+                // Clear subtitle if we go back to idle (speech finished)
+                // We only clear if it is currently showing Jarvis's text (blue)
+                if (subtitleContainer.classList.contains('text-jarvis')) {
+                     subtitleContainer.classList.add('fade-out');
+                }
+            }
+        }
+
+        function py_addMessage(sender, message) {
+            console.log("Message:", sender, message);
+            if (sender === "YOU") {
+                showSubtitle(message, false);
+            } else if (sender === "JARVIS") {
+                // Persistent subtitle until IDLE
+                showSubtitle(message, true, true);
+            }
+        }
+
+        function py_updateUserStreaming(text) {
+             // Updates user text without quotes closure or timeout
+             subtitleContainer.innerText = "\"" + text + "...";
+             subtitleContainer.classList.remove('fade-out');
+             subtitleContainer.classList.remove('text-jarvis');
+             if (subtitleTimeout) clearTimeout(subtitleTimeout);
+        }
+
+        // --- JS to Python Interface ---
+
+        function toggleListening(isActive) {
+            if (window.pywebview && window.pywebview.api) {
+                if (isActive) {
+                     window.pywebview.api.toggle_listening(true);
+                     py_updateStatus("LISTENING...");
+                } else {
+                     window.pywebview.api.toggle_listening(false);
+                     py_updateStatus("PAUSED");
+                }
+            } else {
+                console.error("PyWebView API not found.");
+            }
+        }
+
+        // --- Helper Functions ---
+        
+        let subtitleTimeout;
+
+        function showSubtitle(text, isJarvis = false, persistent = false) {
+            subtitleContainer.innerText = "\"" + text + "\"";
+            subtitleContainer.classList.remove('fade-out');
+            
+            if (isJarvis) {
+                subtitleContainer.classList.add('text-jarvis');
+            } else {
+                subtitleContainer.classList.remove('text-jarvis');
+            }
+            
+            if (subtitleTimeout) clearTimeout(subtitleTimeout);
+            
+            if (!persistent) {
+                // Calculate read time roughly (min 4 secs, or 100ms per char)
+                let readTime = Math.max(4000, text.length * 100);
+                
+                subtitleTimeout = setTimeout(() => {
+                    subtitleContainer.classList.add('fade-out');
+                }, readTime);
+            }
+        }
+
+        function updateGreeting() {
+            const hour = new Date().getHours();
+            let greet = "Hello";
+            if (hour < 12) greet = "Good Morning";
+            else if (hour < 18) greet = "Good Afternoon";
+            else greet = "Good Evening";
+            greeting.innerText = greet;
+        }
+
+        updateGreeting();
+        py_updateStatus("IDLE");
+
+        window.addEventListener('pywebviewready', function() {
+            console.log("Swati UI Ready");
+        });
+
+    </script>
+</body>
+</html>

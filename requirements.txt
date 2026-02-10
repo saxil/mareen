@@ -1,0 +1,14 @@
+ollama
+SpeechRecognition
+pyttsx3
+pyautogui
+requests
+pyaudio
+vosk
+AppOpener
+edge-tts
+pygame
+customtkinter
+Pillow
+pywebview
+flask
